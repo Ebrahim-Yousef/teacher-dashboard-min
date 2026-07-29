@@ -1,82 +1,45 @@
-// import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-// import Login from "../pages/Login";
-// import Dashboard from "../pages/Dashboard";
-// import AppLayout from "../layouts/AppLayout";
-// import { useAuth } from "../hooks/useAuth";
-
-// const AppRouter = () => {
-//   const { user } = useAuth();
-//   console.log(!!user);
-
-//   return (
-//     <div>
-//       <BrowserRouter>
-//         <Routes>
-//           {/* Public Route */}
-//           <Route
-//             path="/"
-//             element={
-//               user ? (
-//                 <Navigate to="/dashboard" replace />
-//               ) : (
-//                 <Navigate to="/login" replace />
-//               )
-//             }
-//           />
-//           <Route
-//             path="/login"
-//             element={user ? <Navigate to="/dashboard" replace /> : <Login />}
-//           />
-//           {/* Protected Routes */}
-
-//           <Route
-//             path="/dashboard"
-//             element={
-//               <AppLayout>
-//                 {user ? <Dashboard /> : <Navigate to="/login" replace />}
-//               </AppLayout>
-//             }
-//           />
-//         </Routes>
-//       </BrowserRouter>
-//     </div>
-//   );
-// };
-
-// export default AppRouter;
-
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "../pages/Login";
-import Dashboard from "../pages/Dashboard";
-import AppLayout from "../layouts/AppLayout";
 import ProtectedRoute from "./ProtectedRoute";
+import AppLayout from "../layouts/AppLayout";
 import { useAuth } from "../hooks/useAuth";
+
+const Login = lazy(() => import("../pages/Login"));
+const Dashboard = lazy(() => import("../pages/Dashboard"));
+const StudentDetails = lazy(() => import("../pages/StudentDetails"));
+const Settings = lazy(() => import("../pages/Settings"));
+const NotFound = lazy(() => import("../pages/NotFound"));
+
+const PageLoader = () => (
+  <div className="flex min-h-screen items-center justify-center bg-gray-50 text-indigo-600 font-bold">
+    جاري التحميل...
+  </div>
+);
 
 const AppRouter = () => {
   const { user } = useAuth();
 
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route
-          path="/login"
-          element={user ? <Navigate to="/dashboard" replace /> : <Login />}
-        />
-
-        {/* Protected Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route element={<AppLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route
+            path="/login"
+            element={user ? <Navigate to="/dashboard" replace /> : <Login />}
+          />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+            </Route>
+            <Route path="/students/:id" element={<StudentDetails />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
-        </Route>
-
-        {/* Default Route */}
-        <Route
-          path="*"
-          element={<Navigate to={user ? "/dashboard" : "/login"} replace />}
-        />
-      </Routes>
+          <Route
+            path="*"
+            element={user ? <NotFound /> : <Navigate to="/login" replace />}
+          />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 };
