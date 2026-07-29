@@ -51,7 +51,7 @@ const Pagination = () => {
             "
             title="الصفحة السابقة"
           >
-            <ChevronLeft size={18} />
+            <ChevronRight size={18} />
           </button>
           {Array.from({ length: totalPages }, (_, index) => {
             const page = index + 1;
@@ -110,7 +110,7 @@ const Pagination = () => {
             "
             title="الصفحة التالية"
           >
-            <ChevronRight size={18} />
+            <ChevronLeft size={18} />
           </button>
         </div>
       ) : (
@@ -129,7 +129,7 @@ const Pagination = () => {
           />
         </button>
         {isOpen && (
-          <div className="absolute right-0 mt-1 w-16 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-lg ring-1 ring-black/5 z-50 py-1">
+          <div className="absolute right-0 bottom-full mb-1 w-16 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-lg ring-1 ring-black/5 z-50 py-1 origin-bottom animate-slide-up-in">
             {[5, 10, 20, 50].map((num) => (
               <button
                 key={num}
