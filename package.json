@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "eslint . && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -16,6 +16,7 @@
     "lucide-react": "^1.24.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "react-phone-input-2": "^2.15.1",
     "react-router-dom": "^7.18.1",
     "react-select": "^5.10.2",
     "tailwind-merge": "^3.6.0",
