@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Input from "../ui/Input";
+import PhoneInput from "../ui/PhoneInput";
 import Select from "../ui/Select";
 import Button from "../ui/Button";
 import grades from "../../constants/grades";
@@ -12,13 +13,33 @@ import {
   checkDuplicateStudent,
 } from "../../utils/validations/studentValidation";
 
+const cleanPhoneNumber = (phone) => {
+  if (!phone) return "";
+  let cleaned = String(phone).replace(/\D/g, "");
+  if (cleaned.startsWith("20")) {
+    cleaned = "0" + cleaned.slice(2);
+  } else if (!cleaned.startsWith("0") && cleaned.length === 10) {
+    cleaned = "0" + cleaned;
+  }
+  return cleaned;
+};
+
+const formatPhoneForInput = (phone) => {
+  if (!phone) return "";
+  const cleaned = cleanPhoneNumber(phone);
+  if (cleaned.startsWith("0") && cleaned.length === 11) {
+    return "20" + cleaned.slice(1);
+  }
+  return cleaned;
+};
+
 const StudentForm = ({ onSuccess, student }) => {
   const { createStudent, updateStudent, students } = useStudents();
 
   const [formData, setFormData] = useState({
     name: student?.name || "",
-    studentPhone: student?.studentPhone || "",
-    parentPhone: student?.parentPhone || "",
+    studentPhone: formatPhoneForInput(student?.studentPhone),
+    parentPhone: formatPhoneForInput(student?.parentPhone),
     stage: student?.stage || "",
     grade: student?.grade || "",
   });
@@ -27,14 +48,7 @@ const StudentForm = ({ onSuccess, student }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     let newValue = value;
-    console.log(name, newValue);
-    // اسم الطالب: يسمح بالحروف العربية والمسافات فقط
-    // if (name === "name") {
-    //   newValue = value.replace(/[^\u0600-\u06FF\s]/g, "");
-    // }
-    if (name === "studentPhone" || name === "parentPhone") {
-      newValue = value.replace(/\D/g, "").slice(0, 11);
-    }
+
     if (name === "stage") {
       setFormData((prev) => ({
         ...prev,
@@ -58,9 +72,19 @@ const StudentForm = ({ onSuccess, student }) => {
     }));
   };
 
+  const handlePhoneChange = (name, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    setErrors((prev) => ({
+      ...prev,
+      [name]: "",
+    }));
+  };
+
   const validate = () => {
     const newErrors = {};
-
     const nameValidation = validateStudentName(formData.name);
     if (!nameValidation.isValid) {
       newErrors.name = nameValidation.message;
@@ -102,23 +126,27 @@ const StudentForm = ({ onSuccess, student }) => {
   };
 
   const handleSubmit = (e) => {
-    // console.log("submit worked");
     e.preventDefault();
     if (!validate()) return;
+
+    const sanitizedData = {
+      ...formData,
+      studentPhone: cleanPhoneNumber(formData.studentPhone),
+      parentPhone: cleanPhoneNumber(formData.parentPhone),
+    };
 
     if (student) {
       updateStudent({
         ...student,
-        ...formData,
+        ...sanitizedData,
       });
     } else {
       createStudent({
         id: Date.now(),
-        ...formData,
+        ...sanitizedData,
       });
     }
 
-    // console.log("student added");
     onSuccess();
   };
 
@@ -127,35 +155,47 @@ const StudentForm = ({ onSuccess, student }) => {
   return (
     <form dir="rtl" onSubmit={handleSubmit} className="space-y-4">
       <Input
-        label="اسم الطالب"
+        label="اسم الطالب ثلاثي أو رباعي"
         name="name"
         value={formData.name}
         onChange={handleChange}
+        onClear={() => setFormData((prev) => ({ ...prev, name: "" }))}
         error={errors.name}
+        placeholder="أدخل اسم الطالب..."
         required
       />
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Input
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <PhoneInput
           label="رقم هاتف الطالب"
-          type="tel"
-          name="studentPhone"
           value={formData.studentPhone}
-          onChange={handleChange}
+          onChange={(value) => handlePhoneChange("studentPhone", value)}
+          onClear={() =>
+            setFormData((prev) => ({
+              ...prev,
+              studentPhone: "",
+            }))
+          }
           error={errors.studentPhone}
           required
         />
 
-        <Input
+        <PhoneInput
           label="رقم هاتف ولي الأمر"
-          type="tel"
-          name="parentPhone"
           value={formData.parentPhone}
-          onChange={handleChange}
+          onChange={(value) => handlePhoneChange("parentPhone", value)}
+          onClear={() =>
+            setFormData((prev) => ({
+              ...prev,
+              parentPhone: "",
+            }))
+          }
           error={errors.parentPhone}
           required
         />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Select
           label="المرحلة الدراسية"
           name="stage"
@@ -163,6 +203,7 @@ const StudentForm = ({ onSuccess, student }) => {
           onChange={handleChange}
           options={stages}
           error={errors.stage}
+          placeholder="اختر المرحلة..."
           required
         />
 
@@ -176,10 +217,17 @@ const StudentForm = ({ onSuccess, student }) => {
           error={errors.grade}
           required
           disabled={!formData.stage}
+          placeholder="اختر الصف..."
         />
       </div>
-      <div className="flex justify-center pt-2">
-        <Button type="submit">حفظ الطالب</Button>
+
+      <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+        <Button type="button" variant="outline" onClick={onSuccess}>
+          إلغاء
+        </Button>
+        <Button type="submit" variant="primary">
+          {student ? "تحديث البيانات" : "حفظ الطالب"}
+        </Button>
       </div>
     </form>
   );
