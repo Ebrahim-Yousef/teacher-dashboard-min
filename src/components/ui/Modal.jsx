@@ -10,8 +10,8 @@ const Modal = ({ isOpen, onClose, title, children, className }) => {
           className="
             fixed inset-0 z-50
             flex items-center justify-center
-            bg-black/60
-            p-4
+            bg-slate-900/60 backdrop-blur-xs
+            p-3 sm:p-6
           "
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -25,19 +25,13 @@ const Modal = ({ isOpen, onClose, title, children, className }) => {
         >
           <motion.div
             className={cn(
-              `
-              w-full
-              max-w-xl
-              rounded-2xl
-              bg-white
-              shadow-2xl
-              `,
+              "w-full max-w-lg md:max-w-xl lg:max-w-2xl rounded-2xl bg-white shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden",
               className,
             )}
             initial={{
               opacity: 0,
               scale: 0.95,
-              y: 10,
+              y: 12,
             }}
             animate={{
               opacity: 1,
@@ -47,7 +41,7 @@ const Modal = ({ isOpen, onClose, title, children, className }) => {
             exit={{
               opacity: 0,
               scale: 0.95,
-              y: 10,
+              y: 12,
             }}
             transition={{
               duration: 0.2,
@@ -62,13 +56,17 @@ const Modal = ({ isOpen, onClose, title, children, className }) => {
                 justify-between
                 border-b
                 border-slate-100
-                px-6
+                px-5
                 py-4
+                sm:px-6
+                bg-slate-50/50
+                shrink-0
               "
             >
               <h2
                 className="
-                  text-xl
+                  text-base
+                  sm:text-lg
                   font-bold
                   text-slate-800
                 "
@@ -79,20 +77,24 @@ const Modal = ({ isOpen, onClose, title, children, className }) => {
               <button
                 onClick={onClose}
                 className="
-                  rounded-lg
-                  p-2
-                  text-slate-500
-                  transition
-                  hover:bg-slate-100
+                  rounded-xl
+                  p-1.5
+                  text-slate-400
+                  transition-colors
+                  hover:bg-slate-200/60
                   hover:text-slate-700
+                  cursor-pointer
                 "
+                title="إغلاق"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
             {/* Content */}
-            <div className="p-6">{children}</div>
+            <div className="px-5 py-5 sm:px-6 overflow-y-auto flex-1">
+              {children}
+            </div>
           </motion.div>
         </motion.div>
       )}

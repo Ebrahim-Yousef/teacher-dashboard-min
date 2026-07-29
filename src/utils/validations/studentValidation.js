@@ -1,4 +1,5 @@
-// التحقق من اسم الطالب
+const normalizePhone = (phone) => phone.replace("+", "");
+
 export const validateStudentName = (name) => {
   const value = name.trim();
   if (!value) {
@@ -32,7 +33,6 @@ export const validateStudentName = (name) => {
   };
 };
 
-// التحقق من رقم الهاتف
 export const validateEgyptianPhone = (phone) => {
   if (!phone) {
     return {
@@ -40,21 +40,19 @@ export const validateEgyptianPhone = (phone) => {
       message: "رقم الهاتف مطلوب",
     };
   }
-
-  if (!/^(010|011|012|015)\d{8}$/.test(phone)) {
+  const normalizedPhone = phone.replace("+", "");
+  if (!/^20(10|11|12|15)\d{8}$/.test(normalizedPhone)) {
     return {
       isValid: false,
       message: "رقم الهاتف غير صحيح",
     };
   }
-
   return {
     isValid: true,
     message: "",
   };
 };
 
-// التحقق من تكرار رقم الهاتف
 export const checkDuplicateStudentPhone = (
   phone,
   students,
@@ -62,7 +60,8 @@ export const checkDuplicateStudentPhone = (
 ) => {
   const exists = students.some(
     (student) =>
-      student.studentPhone === phone && student.id !== currentStudentId,
+      normalizePhone(student.studentPhone) === normalizePhone(phone) &&
+      student.id !== currentStudentId,
   );
   return {
     isValid: !exists,
@@ -70,7 +69,6 @@ export const checkDuplicateStudentPhone = (
   };
 };
 
-// التحقق من تكرار الطالب
 export const checkDuplicateStudent = (
   name,
   phone,
@@ -80,7 +78,7 @@ export const checkDuplicateStudent = (
   const exists = students.some(
     (student) =>
       student.name.trim() === name.trim() &&
-      student.studentPhone === phone &&
+      normalizePhone(student.studentPhone) === normalizePhone(phone) &&
       student.id !== currentStudentId,
   );
   return {

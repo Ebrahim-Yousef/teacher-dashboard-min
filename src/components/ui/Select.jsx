@@ -1,7 +1,7 @@
 import { useState } from "react";
 import ReactSelect, { components } from "react-select";
+import Label from "./Label";
 
-// Custom Dropdown Indicator to toggle the chevron direction based on menu state
 const CustomDropdownIndicator = (props) => {
   const { selectProps } = props;
   return (
@@ -12,8 +12,8 @@ const CustomDropdownIndicator = (props) => {
         viewBox="0 0 24 24"
         strokeWidth={2}
         stroke="currentColor"
-        className={`w-4 h-4 transition-transform duration-200 ${
-          selectProps.menuIsOpen ? "rotate-180" : ""
+        className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
+          selectProps.menuIsOpen ? "rotate-180 text-primary" : ""
         }`}
       >
         <path
@@ -35,16 +35,21 @@ const Select = ({
   error,
   required = false,
   disabled = false,
+  placeholder = "اختر...",
 }) => {
-  // Track menu open state to handle the icon rotation smoothly
   const [menuIsOpen, setMenuIsOpen] = useState(false);
 
-  const selectOptions = options.map((option) => ({
-    value: option,
-    label: option,
-  }));
+  const selectOptions = options.map((option) =>
+    typeof option === "object"
+      ? option
+      : {
+          value: option,
+          label: option,
+        },
+  );
 
-  const selectedValue = selectOptions.find((option) => option.value === value);
+  const selectedValue =
+    selectOptions.find((option) => option.value === value) || null;
 
   const handleChange = (selectedOption) => {
     onChange({
@@ -58,49 +63,76 @@ const Select = ({
   const customStyles = {
     control: (base, state) => ({
       ...base,
-      minHeight: "48px",
-      borderRadius: "0.5rem",
-      borderColor: error ? "#ef4444" : state.isFocused ? "#3b82f6" : "#cbd5e1",
-      boxShadow: "none",
+      minHeight: "44px",
+      borderRadius: "0.75rem",
+      borderColor: error ? "#ef4444" : state.isFocused ? "#4f46e5" : "#e2e8f0",
+      boxShadow: state.isFocused ? "0 0 0 3px rgba(79, 70, 229, 0.15)" : "none",
       direction: "rtl",
+      backgroundColor: disabled ? "#f1f5f9" : "#ffffff",
+      cursor: disabled ? "not-allowed" : "pointer",
       "&:hover": {
-        borderColor: "#3b82f6",
+        borderColor: error ? "#ef4444" : "#4f46e5",
       },
+      transition: "all 0.2s ease",
     }),
     menu: (base) => ({
       ...base,
       direction: "rtl",
+      borderRadius: "0.75rem",
+      boxShadow:
+        "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)",
+      border: "1px solid #e2e8f0",
+      zIndex: 40,
+      overflow: "hidden",
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected
+        ? "#4f46e5"
+        : state.isFocused
+          ? "#eef2ff"
+          : "transparent",
+      color: state.isSelected
+        ? "#ffffff"
+        : state.isFocused
+          ? "#3730a3"
+          : "#334155",
+      cursor: "pointer",
+      fontSize: "0.875rem",
+      fontWeight: state.isSelected ? "600" : "400",
+      padding: "10px 14px",
+      "&:active": {
+        backgroundColor: "#4338ca",
+        color: "#ffffff",
+      },
     }),
     placeholder: (base) => ({
       ...base,
       color: "#94a3b8",
+      fontSize: "0.875rem",
     }),
     singleValue: (base) => ({
       ...base,
       color: "#1e293b",
+      fontSize: "0.875rem",
+      fontWeight: "500",
     }),
-    // Hiding the vertical line indicator separator via styles
     indicatorSeparator: () => ({
       display: "none",
     }),
-    // Optional: fixing padding alignment for RTL dropdown layout
     dropdownIndicator: (base) => ({
       ...base,
-      paddingLeft: "12px",
-      paddingRight: "12px",
+      paddingLeft: "10px",
+      paddingRight: "10px",
     }),
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5 w-full">
       {label && (
-        <label
-          htmlFor={name}
-          className="block text-sm font-medium text-slate-700"
-        >
+        <Label htmlFor={name} required={required}>
           {label}
-          {required && <span className="mx-1 text-red-500">*</span>}
-        </label>
+        </Label>
       )}
 
       <ReactSelect
@@ -111,19 +143,20 @@ const Select = ({
         options={selectOptions}
         styles={customStyles}
         isDisabled={disabled}
-        placeholder="اختر..."
+        placeholder={placeholder}
+        isClearable
         noOptionsMessage={() => "لا توجد اختيارات"}
-        // Handling menu open/close state
         menuIsOpen={menuIsOpen}
         onMenuOpen={() => setMenuIsOpen(true)}
         onMenuClose={() => setMenuIsOpen(false)}
-        // Overriding default components
         components={{
           DropdownIndicator: CustomDropdownIndicator,
         }}
       />
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && (
+        <p className="text-xs font-medium text-red-500 mt-1">{error}</p>
+      )}
     </div>
   );
 };
