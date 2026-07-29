@@ -20,7 +20,7 @@ const Pagination = () => {
     <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-4">
       {totalPages > 1 ? (
         <div
-          dir="ltr"
+          dir="rtl"
           className="flex items-center justify-center gap-1.5 flex-wrap"
         >
           <button
