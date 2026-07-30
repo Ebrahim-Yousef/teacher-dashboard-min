@@ -18,7 +18,9 @@ const StudentDetails = () => {
     <div className="space-y-6">
       <Header />
       <div className="mx-auto max-w-4xl space-y-6">
-        <BackButton to="/dashboard" />
+        <div className="mr-1">
+          <BackButton to="/dashboard" />
+        </div>
         <StudentInfoCard student={student} onEdit={() => setIsEditOpen(true)} />
         <StudentModal
           isOpen={isEditOpen}
