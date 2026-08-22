@@ -4,7 +4,6 @@ import { User, Lock, GraduationCap, Eye, EyeOff } from "lucide-react";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { validateLoginForm } from "../utils/validations/authValidation";
-import { loginUser } from "../utils/auth";
 import { useAuth } from "../hooks/useAuth";
 
 const Login = () => {
@@ -12,9 +11,8 @@ const Login = () => {
     username: "",
     password: "",
   });
-  const [errors, setErrors] = useState({
-    general: null,
-  });
+
+  const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -27,28 +25,71 @@ const Login = () => {
       ...prev,
       [name]: value,
     }));
+
+    if (errors[name] || errors.general) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: null,
+        general: null,
+      }));
+    }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+
+    // 1. Validation المحلي أولاً
     const validationErrors = validateLoginForm({ ...formData });
-    setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       return;
     }
+
     setIsLoading(true);
-    setTimeout(() => {
-      const user = loginUser(formData.username, formData.password);
-      if (!user) {
-        setErrors({
-          general: "اسم المستخدم أو كلمة المرور غير صحيحة",
-        });
-        setIsLoading(false);
-        return;
+    setErrors({});
+
+    try {
+      // 2. إرسال الطلب للسيرفر
+      const response = await login(formData.username, formData.password);
+
+      if (response?.success) {
+        const userRole = response.data?.user?.role || response.data?.role;
+
+        // التوجيه بناءً على الدور واستبدال سجل المتصفح لعدم العودة بزر الرجوع
+        if (userRole === "super_admin") {
+          navigate("/teachers", { replace: true });
+        } else {
+          navigate("/dashboard", { replace: true });
+        }
+      } else {
+        // 3. معالجة وتفنيد الأخطاء القادمة من الـ API
+        const apiError = response?.error;
+        const newErrors = {};
+
+        // استخراج مصفوفة الأخطاء سواء كانت مباشرة أو داخل كائن error فرعي
+        const details = apiError?.details || apiError?.error?.details;
+        const message = apiError?.message || apiError?.error?.message;
+
+        if (Array.isArray(details) && details.length > 0) {
+          details.forEach((item) => {
+            if (item.field) {
+              newErrors[item.field] = item.message;
+            }
+          });
+        } else {
+          newErrors.general =
+            message || "اسم المستخدم أو كلمة المرور غير صحيحة";
+        }
+
+        setErrors(newErrors);
       }
-      login(user);
-      navigate("/dashboard");
-    }, 800);
+    } catch {
+      setErrors({
+        general: "حدث خطأ في الاتصال بالخادم، يرجى المحاولة لاحقاً",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -68,6 +109,7 @@ const Login = () => {
         <p className="mt-2 text-center text-xs sm:text-sm text-slate-500 font-medium">
           مرحبًا بعودتك! يرجى إدخال بيانات الاعتماد لتسجيل الدخول.
         </p>
+
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <Input
             icon={User}
@@ -76,9 +118,11 @@ const Login = () => {
             value={formData.username}
             onChange={handleChange}
             placeholder="أدخل اسم المستخدم"
+            disabled={isLoading}
             required
             error={errors.username}
           />
+
           <Input
             icon={Lock}
             type={showPassword ? "text" : "password"}
@@ -87,6 +131,7 @@ const Login = () => {
             value={formData.password}
             onChange={handleChange}
             placeholder="أدخل كلمة المرور"
+            disabled={isLoading}
             required
             error={errors.password}
             rightActions={
@@ -95,16 +140,19 @@ const Login = () => {
                 onClick={() => setShowPassword((prev) => !prev)}
                 className="text-slate-400 hover:text-primary transition-colors cursor-pointer"
                 title={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                disabled={isLoading}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             }
           />
+
           {errors.general && (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center text-xs font-semibold text-red-600">
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-center text-xs font-semibold text-red-600 animate-fade">
               {errors.general}
             </div>
           )}
+
           <Button
             type="submit"
             loading={isLoading}
