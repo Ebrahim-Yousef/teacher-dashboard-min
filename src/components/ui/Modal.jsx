@@ -2,7 +2,22 @@ import { X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "../../styles/utils/cn";
 
-const Modal = ({ isOpen, onClose, title, children, className }) => {
+const maxWidthClasses = {
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-xl",
+  "2xl": "max-w-2xl",
+};
+
+const Modal = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+  className,
+  maxWidth = "2xl",
+}) => {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -25,7 +40,8 @@ const Modal = ({ isOpen, onClose, title, children, className }) => {
         >
           <motion.div
             className={cn(
-              "w-full max-w-lg md:max-w-xl lg:max-w-2xl rounded-2xl bg-white shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden",
+              "w-full rounded-2xl bg-white shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden",
+              maxWidthClasses[maxWidth] || maxWidthClasses["2xl"],
               className,
             )}
             initial={{

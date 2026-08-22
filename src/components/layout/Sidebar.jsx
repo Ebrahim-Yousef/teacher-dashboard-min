@@ -1,22 +1,40 @@
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { Users, LogOut, Settings, GraduationCap, X } from "lucide-react";
+import {
+  Users,
+  LogOut,
+  Settings,
+  GraduationCap,
+  BookOpen,
+  X,
+} from "lucide-react";
 import SidebarItem from "../ui/SidebarItem";
 import ConfirmDialog from "../ui/ConfirmDialog";
 
 const Sidebar = ({ isMobileOpen, onClose }) => {
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleConfirmLogout = () => {
-    logout();
-    navigate("/login");
+  const handleConfirmLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await logout();
+      setIsLogoutDialogOpen(false);
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("حدث خطأ أثناء تسجيل الخروج:", error);
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const navItems = [
     { icon: Users, label: "إدارة الطلاب", to: "/dashboard" },
+    { icon: BookOpen, label: "المواد الدراسية", to: "/subjects" },
     { icon: Settings, label: "الإعدادات", to: "/settings" },
   ];
 
@@ -86,13 +104,15 @@ const Sidebar = ({ isMobileOpen, onClose }) => {
       </aside>
       <ConfirmDialog
         isOpen={isLogoutDialogOpen}
-        onClose={() => setIsLogoutDialogOpen(false)}
+        onClose={() => !isLoggingOut && setIsLogoutDialogOpen(false)}
         onConfirm={handleConfirmLogout}
         title="تسجيل الخروج"
         message="هل أنت متأكد من رغبتك في تسجيل الخروج من النظام؟"
         confirmText="تسجيل الخروج"
         cancelText="تراجع"
         variant="danger"
+        loadingText="جاري الخروج..."
+        isLoading={isLoggingOut}
       />
     </>
   );

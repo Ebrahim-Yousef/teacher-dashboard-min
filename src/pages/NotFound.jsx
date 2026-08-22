@@ -1,24 +1,24 @@
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import Button from "../components/ui/Button";
+import { useAuth } from "../hooks/useAuth";
 
 const NotFound = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleGoHome = () => {
+    if (user?.role === "super_admin") {
+      navigate("/teachers", { replace: true });
+    } else {
+      navigate("/dashboard", { replace: true });
+    }
+  };
 
   return (
     <div
       dir="rtl"
-      className="
-        flex
-        min-h-screen
-        flex-col
-        items-center
-        justify-center
-        gap-6
-        bg-slate-50
-        px-4
-        text-center
-      "
+      className="flex min-h-screen flex-col items-center justify-center gap-6 bg-slate-50 px-4 text-center"
     >
       <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-warning-light text-warning shadow-lg shadow-warning/20">
         <AlertTriangle size={48} />
@@ -34,11 +34,7 @@ const NotFound = () => {
           عذرًا، الصفحة التي تحاول الوصول إليها غير موجودة أو تم نقلها.
         </p>
       </div>
-      <Button
-        onClick={() => navigate("/dashboard")}
-        variant="primary"
-        size="lg"
-      >
+      <Button onClick={handleGoHome} variant="primary" size="lg">
         العودة للوحة التحكم
       </Button>
     </div>
