@@ -6,6 +6,7 @@ import Button from "../ui/Button";
 import grades from "../../constants/grades";
 import stages from "../../constants/stages";
 import { useStudents } from "../../hooks/useStudents";
+import { AlertCircle, Loader2 } from "lucide-react";
 import {
   validateStudentName,
   validateEgyptianPhone,
@@ -13,13 +14,22 @@ import {
   checkDuplicateStudent,
 } from "../../utils/validations/studentValidation";
 
+// const cleanPhoneNumber = (phone) => {
+//   if (!phone) return "";
+//   let cleaned = String(phone).replace(/\D/g, "");
+//   if (cleaned.startsWith("20")) {
+//     cleaned = "0" + cleaned.slice(2);
+//   } else if (!cleaned.startsWith("0") && cleaned.length === 10) {
+//     cleaned = "0" + cleaned;
+//   }
+//   return cleaned;
+// };
+// تحسين دالة الـ Sanitation لتحديد الصيغة المناسبة للـ Validation والـ API
 const cleanPhoneNumber = (phone) => {
   if (!phone) return "";
   let cleaned = String(phone).replace(/\D/g, "");
-  if (cleaned.startsWith("20")) {
+  if (cleaned.startsWith("20") && cleaned.length === 12) {
     cleaned = "0" + cleaned.slice(2);
-  } else if (!cleaned.startsWith("0") && cleaned.length === 10) {
-    cleaned = "0" + cleaned;
   }
   return cleaned;
 };
@@ -34,7 +44,7 @@ const formatPhoneForInput = (phone) => {
 };
 
 const StudentForm = ({ onSuccess, student }) => {
-  const { createStudent, updateStudent, students } = useStudents();
+  const { createStudent, updateStudent, students = [] } = useStudents();
 
   const [formData, setFormData] = useState({
     name: student?.name || "",
@@ -43,16 +53,19 @@ const StudentForm = ({ onSuccess, student }) => {
     stage: student?.stage || "",
     grade: student?.grade || "",
   });
+
   const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    let newValue = value;
+    setApiError("");
 
     if (name === "stage") {
       setFormData((prev) => ({
         ...prev,
-        stage: newValue,
+        stage: value,
         grade: "",
       }));
       setErrors((prev) => ({
@@ -64,7 +77,7 @@ const StudentForm = ({ onSuccess, student }) => {
     }
     setFormData((prev) => ({
       ...prev,
-      [name]: newValue,
+      [name]: value,
     }));
     setErrors((prev) => ({
       ...prev,
@@ -73,6 +86,7 @@ const StudentForm = ({ onSuccess, student }) => {
   };
 
   const handlePhoneChange = (name, value) => {
+    setApiError("");
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -97,63 +111,101 @@ const StudentForm = ({ onSuccess, student }) => {
     if (!parentPhoneValidation.isValid) {
       newErrors.parentPhone = parentPhoneValidation.message;
     }
-    if (!formData.stage.trim()) {
+    if (!formData.stage?.trim()) {
       newErrors.stage = "المرحلة الدراسية مطلوبة";
     }
 
-    if (!formData.grade.trim()) {
+    if (!formData.grade?.trim()) {
       newErrors.grade = "الصف الدراسي مطلوب";
     }
-    const duplicatePhone = checkDuplicateStudentPhone(
-      formData.studentPhone,
-      students,
-      student?.id,
-    );
-    if (!duplicatePhone.isValid) {
-      newErrors.studentPhone = duplicatePhone.message;
+
+    if (Array.isArray(students) && students.length > 0) {
+      const duplicatePhone = checkDuplicateStudentPhone(
+        formData.studentPhone,
+        students,
+        student?.id,
+      );
+      if (!duplicatePhone.isValid) {
+        newErrors.studentPhone = duplicatePhone.message;
+      }
+      const duplicateStudent = checkDuplicateStudent(
+        formData.name,
+        formData.studentPhone,
+        students,
+        student?.id,
+      );
+      if (!duplicateStudent.isValid) {
+        newErrors.name = duplicateStudent.message;
+      }
     }
-    const duplicateStudent = checkDuplicateStudent(
-      formData.name,
-      formData.studentPhone,
-      students,
-      student?.id,
-    );
-    if (!duplicateStudent.isValid) {
-      newErrors.name = duplicateStudent.message;
-    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setApiError("");
+
     if (!validate()) return;
 
+    setIsSubmitting(true);
+
     const sanitizedData = {
-      ...formData,
+      name: formData.name.trim(),
       studentPhone: cleanPhoneNumber(formData.studentPhone),
       parentPhone: cleanPhoneNumber(formData.parentPhone),
+      stage: formData.stage,
+      grade: formData.grade,
     };
 
-    if (student) {
-      updateStudent({
-        ...student,
-        ...sanitizedData,
-      });
-    } else {
-      createStudent({
-        id: Date.now(),
-        ...sanitizedData,
-      });
-    }
+    try {
+      let result;
+      if (student) {
+        result = await updateStudent({
+          id: student.id,
+          ...sanitizedData,
+        });
+      } else {
+        result = await createStudent(sanitizedData);
+      }
 
-    onSuccess();
+      if (result && result.success === false) {
+        setApiError(
+          result.error?.message || "رقم الهاتف أو بيانات الطالب مسجلة بالفعل",
+        );
+      } else {
+        onSuccess();
+      }
+    } catch (err) {
+      const responseMsg =
+        err.response?.data?.message || err.response?.data?.error;
+      if (err.response?.status === 409) {
+        setApiError(
+          responseMsg ||
+            "بيانات الطالب مُسجلة بالفعل (رقم هاتف الطالب أو ولي الأمر مكرر)",
+        );
+      } else {
+        setApiError(
+          responseMsg || "حدث خطأ أثناء حفظ البيانات، يرجى المحاولة لاحقاً",
+        );
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const availableGrades = formData.stage ? grades[formData.stage] : [];
 
   return (
     <form dir="rtl" onSubmit={handleSubmit} className="space-y-4">
+      {apiError && (
+        <div className="flex items-center gap-2 p-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl">
+          <AlertCircle size={16} className="shrink-0 text-red-500" />
+          <span>{apiError}</span>
+        </div>
+      )}
+
       <Input
         label="اسم الطالب ثلاثي أو رباعي"
         name="name"
@@ -162,6 +214,7 @@ const StudentForm = ({ onSuccess, student }) => {
         onClear={() => setFormData((prev) => ({ ...prev, name: "" }))}
         error={errors.name}
         placeholder="أدخل اسم الطالب..."
+        disabled={isSubmitting}
         required
       />
 
@@ -177,6 +230,7 @@ const StudentForm = ({ onSuccess, student }) => {
             }))
           }
           error={errors.studentPhone}
+          disabled={isSubmitting}
           required
         />
 
@@ -191,6 +245,7 @@ const StudentForm = ({ onSuccess, student }) => {
             }))
           }
           error={errors.parentPhone}
+          disabled={isSubmitting}
           required
         />
       </div>
@@ -204,6 +259,7 @@ const StudentForm = ({ onSuccess, student }) => {
           options={stages}
           error={errors.stage}
           placeholder="اختر المرحلة..."
+          disabled={isSubmitting}
           required
         />
 
@@ -215,18 +271,32 @@ const StudentForm = ({ onSuccess, student }) => {
           onChange={handleChange}
           options={availableGrades}
           error={errors.grade}
-          required
-          disabled={!formData.stage}
+          disabled={!formData.stage || isSubmitting}
           placeholder="اختر الصف..."
+          required
         />
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-        <Button type="button" variant="outline" onClick={onSuccess}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onSuccess}
+          disabled={isSubmitting}
+        >
           إلغاء
         </Button>
-        <Button type="submit" variant="primary">
-          {student ? "تحديث البيانات" : "حفظ الطالب"}
+        <Button type="submit" variant="primary" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <span className="flex items-center gap-2">
+              <Loader2 size={16} className="animate-spin" />
+              جاري الحفظ...
+            </span>
+          ) : student ? (
+            "تحديث البيانات"
+          ) : (
+            "حفظ الطالب"
+          )}
         </Button>
       </div>
     </form>

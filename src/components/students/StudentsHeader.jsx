@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Search, RotateCcw, UserPlus } from "lucide-react";
 import { useStudents } from "../../hooks/useStudents";
 import grades from "../../constants/grades";
@@ -14,8 +15,41 @@ const StudentsHeader = ({ onAddStudent }) => {
     setSelectedStage,
     selectedGrade,
     setSelectedGrade,
+    setCurrentPage,
     clearFilters,
   } = useStudents();
+
+  // حالة محليّة لإتاحة الكتابة السريعة
+  const [searchInput, setSearchInput] = useState(searchTerm || "");
+
+  // تطبيق Debounce لإرسال قيمة البحث للـ Context فقط بعد توقف المستخدم عن الكتابة
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== searchTerm) {
+        setSearchTerm(searchInput);
+        setCurrentPage(1);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchInput, searchTerm, setSearchTerm, setCurrentPage]);
+
+  const handleStageChange = (e) => {
+    const val = e.target.value;
+    setSelectedStage(val);
+    setSelectedGrade("");
+    setCurrentPage(1);
+  };
+
+  const handleGradeChange = (e) => {
+    setSelectedGrade(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleReset = () => {
+    setSearchInput("");
+    clearFilters();
+  };
 
   const availableGrades = selectedStage ? grades[selectedStage] : [];
   const hasActiveFilters = Boolean(
@@ -28,18 +62,22 @@ const StudentsHeader = ({ onAddStudent }) => {
         <div className="flex-1 min-w-50">
           <Input
             type="text"
-            placeholder="ابحث باسم الطالب..."
+            placeholder="ابحث باسم الطالب أو رقم الهاتف..."
             icon={Search}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onClear={() => setSearchTerm("")}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onClear={() => {
+              setSearchInput("");
+              setSearchTerm("");
+              setCurrentPage(1);
+            }}
           />
         </div>
         <div className="w-full sm:w-48">
           <Select
             name="stage"
             value={selectedStage}
-            onChange={(e) => setSelectedStage(e.target.value)}
+            onChange={handleStageChange}
             options={stages}
             placeholder="المرحلة الدراسية"
           />
@@ -48,7 +86,7 @@ const StudentsHeader = ({ onAddStudent }) => {
           <Select
             name="grade"
             value={selectedGrade}
-            onChange={(e) => setSelectedGrade(e.target.value)}
+            onChange={handleGradeChange}
             options={availableGrades}
             disabled={!selectedStage}
             placeholder="الصف الدراسي"
@@ -58,7 +96,7 @@ const StudentsHeader = ({ onAddStudent }) => {
           <Button
             type="button"
             variant="ghost"
-            onClick={clearFilters}
+            onClick={handleReset}
             className="h-10 px-3 text-slate-500 hover:text-slate-800 hover:bg-slate-100 flex items-center justify-center shrink-0 self-end"
             title="إعادة ضبط الفلاتر"
           >

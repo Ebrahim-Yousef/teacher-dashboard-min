@@ -2,5 +2,9 @@ import { useContext } from "react";
 import { StudentsContext } from "../context/students/StudentsContext";
 
 export const useStudents = () => {
-  return useContext(StudentsContext);
+  const context = useContext(StudentsContext);
+  if (!context) {
+    throw new Error("useStudents must be used within a StudentsProvider");
+  }
+  return context;
 };

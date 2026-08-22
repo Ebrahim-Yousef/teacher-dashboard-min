@@ -17,7 +17,7 @@ const StudentInfoCard = ({ student, onEdit }) => {
       .slice(0, 2)
       .map((word) => word[0])
       .join(" ")
-      .toUpperCase() || "ط";
+      .toUpperCase() || "";
 
   return (
     <div className="mx-auto max-w-2xl rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-sm text-center">
