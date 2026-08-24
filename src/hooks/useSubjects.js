@@ -27,7 +27,6 @@ export const useSubjects = (isActiveFilter) => {
     }
   }, [isActiveFilter, showToast]);
 
-  // التحميل الأولي عند فتح الصفحة بدون تحذيرات ESLint
   useEffect(() => {
     let isSubscribed = true;
 
@@ -93,6 +92,12 @@ export const useSubjects = (isActiveFilter) => {
         () => subjectService.updateSubject(id, data),
         "تم تحديث المادة الدراسية بنجاح",
         "فشل تعديل المادة الدراسية",
+      ),
+    toggleSubjectStatus: (id, currentIsActive) =>
+      executeAction(
+        () => subjectService.updateSubject(id, { isActive: !currentIsActive }),
+        `تم ${!currentIsActive ? "تفعيل" : "تعطيل"} المادة بنجاح`,
+        "فشل تغيير حالة المادة",
       ),
     removeSubject: (id) =>
       executeAction(
